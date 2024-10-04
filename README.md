@@ -11,7 +11,7 @@ open the command bar using F1.<br>
 simple commands:
 ```command
 save          -- save the cw file
-explosion     -- simple explosion animation
+explosion     -- simple explosion animation (only works while editing a file)
 mkdir <name>  -- creates a folder in your cwd
 rmdir <name>  -- removes a folder in your cwd
 rmfile <name> -- removes a file in your cwd
