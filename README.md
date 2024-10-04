@@ -1,7 +1,7 @@
 # tindit
 open source terminal code editor made with AI (i made this because i like to create projects with ai :D)
 
-# quick start
+## quick start
 open the editor using
 ```console
 $ python3 tindit.py
