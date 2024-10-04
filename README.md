@@ -20,3 +20,5 @@ create <name> -- creates a file in your cwd
 
 to exit the file you're editing, press ESC (ESCAPE) and to edit the editor, press ESC in the file explorer<br>
 the tindit configurations file path is in ~/.config/tindit/init.json and in windows is in %APPDATA%\tindit\init.json<br>
+first open the editor to create the configuration file!<br>
+in your configuration file you'll see the configuration "tab_is", by default it will have the value of 'SPC', if you press tab it will add the amout of spaces that the configuration "tab_space_len" is. if you use "tab_is": "TAB" it will only add one TAB (\t)
