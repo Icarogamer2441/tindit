@@ -26,6 +26,10 @@ class TinyEditor:
         self.config = self.load_config()
         self.files = []
         self.selected_file = 0
+        self.snippets = self.load_snippets()
+        self.snippet_mode = False
+        self.snippet_selection = 0
+        self.snippet_suggestions = []
 
     def load_config(self):
         if platform.system() == "Windows":
@@ -34,7 +38,7 @@ class TinyEditor:
             config_dir = os.path.expanduser("~/.config/tindit")
         
         config_file = os.path.join(config_dir, "init.json")
-        default_config = {"number": False, "relative_number": False, "tab_is": "SPC", "tab_space_len": 4}
+        default_config = {"number": False, "relative_number": False, "tab_is": "SPC", "tab_space_len": 4, "snippets_enabled": True}
 
         if not os.path.exists(config_dir):
             os.makedirs(config_dir)
@@ -47,6 +51,24 @@ class TinyEditor:
         with open(config_file, 'r') as f:
             config = json.load(f)
             return config
+
+    def load_snippets(self):
+        if platform.system() == "Windows":
+            config_dir = os.path.join(os.environ["APPDATA"], "tindit")
+        else:
+            config_dir = os.path.expanduser("~/.config/tindit")
+        
+        snippets_file = os.path.join(config_dir, "snippets.json")
+        default_snippets = {"hello": "print(\"Hello, world!\")\n"}
+
+        if not os.path.exists(snippets_file):
+            with open(snippets_file, 'w') as f:
+                json.dump(default_snippets, f)
+            return default_snippets
+
+        with open(snippets_file, 'r') as f:
+            snippets = json.load(f)
+            return snippets
 
     def run(self):
         self.show_file_browser()
@@ -71,16 +93,25 @@ class TinyEditor:
                     self.command_mode = False  # Exit command mode after executing command
                 elif not self.current_file:
                     self.open_selected_file()
+                elif self.snippet_mode:
+                    self.expand_snippet()
+                    self.snippet_mode = False
+                    self.snippet_suggestions = []
+                    self.snippet_selection = 0
                 else:
                     self.insert_char(ch)
             elif ch == curses.KEY_UP:
                 if not self.current_file:
                     self.move_file_selection(-1)
+                elif self.snippet_mode:
+                    self.move_snippet_selection(-1)
                 else:
                     self.move_cursor(-1, 0)
             elif ch == curses.KEY_DOWN:
                 if not self.current_file:
                     self.move_file_selection(1)
+                elif self.snippet_mode:
+                    self.move_snippet_selection(1)
                 else:
                     self.move_cursor(1, 0)
             elif ch == curses.KEY_LEFT:
@@ -109,6 +140,8 @@ class TinyEditor:
                 self.handle_command_input(ch)
             elif self.current_file and 32 <= ch <= 126:  # Printable ASCII characters
                 self.insert_char(ch)
+                if self.config["snippets_enabled"]:
+                    self.update_snippet_suggestions()
             elif ch == 9:  # Tab
                 if self.config["tab_is"] == "SPC":
                     for _ in range(self.config["tab_space_len"]):
@@ -190,6 +223,14 @@ class TinyEditor:
 
         if self.command_mode:
             self.screen.addstr(height - 2, 0, ":" + "".join(self.command_buffer))
+        elif self.snippet_mode:
+            for i, suggestion in enumerate(self.snippet_suggestions):
+                if i >= height - 2:
+                    break
+                if i == self.snippet_selection:
+                    self.screen.addstr(i, 0, f"> {suggestion}", curses.A_REVERSE)
+                else:
+                    self.screen.addstr(i, 0, f"  {suggestion}")
 
         cursor_y = self.cursor_y - self.top_line
         cursor_x = self.cursor_x + (5 if self.config["number"] else 0)
@@ -206,12 +247,9 @@ class TinyEditor:
         self.screen.refresh()
 
     def move_cursor(self, dy, dx):
-        # Atualiza a posição do cursor
         new_y = max(0, min(len(self.content) - 1, self.cursor_y + dy))
         new_x = max(0, min(len(self.content[new_y].rstrip()) if self.content else 0, self.cursor_x + dx))
         self.cursor_y, self.cursor_x = new_y, new_x
-
-        height, width = self.screen.getmaxyx()
 
         self.display_file()
 
@@ -406,6 +444,63 @@ class TinyEditor:
             config_file = os.path.expanduser("~/.config/tindit/init.json")
         with open(config_file, 'w') as f:
             json.dump(self.config, f)
+
+    def handle_snippet_expansion(self):
+        if self.current_file:
+            current_line = self.content[self.cursor_y].rstrip()
+            for snippet_name, snippet_content in self.snippets.items():
+                if current_line.endswith(snippet_name):
+                    # Split the snippet content into lines
+                    snippet_lines = snippet_content.splitlines()
+                    # Calculate the insertion point for each line
+                    insertion_point = self.cursor_y
+                    for i, line in enumerate(snippet_lines):
+                        self.content.insert(insertion_point + i + 1, line)
+                    # Replace the snippet name with the first line of the snippet
+                    self.content[self.cursor_y] = current_line.replace(snippet_name, snippet_lines[0], 1)
+                    # Adjust cursor position
+                    self.cursor_y += len(snippet_lines) - 1
+                    self.cursor_x = len(self.content[self.cursor_y].rstrip())
+                    self.display_file()
+                    break
+
+    def update_snippet_suggestions(self):
+        if self.config["snippets_enabled"]:
+            current_line = self.content[self.cursor_y].rstrip()
+            self.snippet_suggestions = [
+                snippet_name for snippet_name in self.snippets
+                if current_line.endswith(snippet_name) or snippet_name.startswith(current_line)
+            ]
+            if self.snippet_suggestions:
+                self.snippet_mode = True
+                self.snippet_selection = 0
+            else:
+                self.snippet_mode = False
+                self.snippet_suggestions = []
+                self.snippet_selection = 0
+
+    def move_snippet_selection(self, direction):
+        self.snippet_selection = (self.snippet_selection + direction) % len(self.snippet_suggestions)
+
+    def expand_snippet(self):
+        if self.snippet_suggestions:
+            snippet_name = self.snippet_suggestions[self.snippet_selection]
+            snippet_content = self.snippets[snippet_name]
+            # Insert snippet content into the file character by character
+            self.content[self.cursor_y] = ""
+            for char in snippet_content:
+                if char == '\n':
+                    self.cursor_y += 1
+                    self.cursor_x = 0
+                    self.content.insert(self.cursor_y, "")
+                else:
+                    self.content[self.cursor_y] += char
+                    self.cursor_x += 1
+                self.display_file()
+            # Adjust cursor position
+            self.cursor_x = len(self.content[self.cursor_y].rstrip())
+            # Update the display
+            self.display_file()
 
     def cleanup(self):
         curses.nocbreak()
