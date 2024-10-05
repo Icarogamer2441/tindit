@@ -490,9 +490,10 @@ class TinyEditor:
             self.content[self.cursor_y] = ""
             for char in snippet_content:
                 if char == '\n':
+                    self.content.insert(self.cursor_y + 1, self.content[self.cursor_y][self.cursor_x:])
+                    self.content[self.cursor_y] = self.content[self.cursor_y][:self.cursor_x] + '\n'
                     self.cursor_y += 1
                     self.cursor_x = 0
-                    self.content.insert(self.cursor_y, "")
                 else:
                     self.content[self.cursor_y] += char
                     self.cursor_x += 1
