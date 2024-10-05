@@ -22,3 +22,10 @@ to exit the file you're editing, press ESC (ESCAPE) and to edit the editor, pres
 the tindit configurations file path is in ~/.config/tindit/init.json and in windows is in %APPDATA%\tindit\init.json<br>
 first open the editor to create the configuration file!<br>
 in your configuration file you'll see the configuration "tab_is", by default it will have the value of 'SPC', if you press tab it will add the amout of spaces that the configuration "tab_space_len" is. if you use "tab_is": "TAB" it will only add one TAB (\t)
+
+## snippets
+
+your snippets file will be in ~/.config/tindit/snippets.json<br>
+in windows is %APPDATA%\tindit/snippets.json<br>
+<br>
+you can add snippets and remove them! and to desactivate or activate, you can enter the init.json file (your configuration file) and you'll see the "snippets_enabled", by default the value is true
