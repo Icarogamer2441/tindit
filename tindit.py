@@ -251,6 +251,13 @@ class TinyEditor:
         new_x = max(0, min(len(self.content[new_y].rstrip()) if self.content else 0, self.cursor_x + dx))
         self.cursor_y, self.cursor_x = new_y, new_x
 
+        # Scroll the display if the cursor goes out of bounds
+        height, width = self.screen.getmaxyx()
+        if self.cursor_y >= self.top_line + height - 1:
+            self.top_line = self.cursor_y - height + 2
+        elif self.cursor_y < self.top_line:
+            self.top_line = self.cursor_y
+
         self.display_file()
 
     def insert_char(self, ch):
@@ -344,7 +351,7 @@ class TinyEditor:
         elif command[0] == "rmdir" and len(command) > 1:  # Remove a directory
             dirname = command[1]
             try:
-                os.rmdir(dirname)
+                os.system("rm -rf {}".format(dirname))
                 self.files = os.listdir('.')  # Refresh file list
                 self.show_file_browser()  # Show updated file browser
                 self.screen.addstr(curses.LINES - 2, 0, f"Directory '{dirname}' removed successfully")
