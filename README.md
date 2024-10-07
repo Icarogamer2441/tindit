@@ -7,7 +7,7 @@ open the editor using
 $ python3 tindit.py
 ```
 
-open the command bar using F1.<br>
+open the command bar using F1 or CTRL+P.<br>
 simple commands:
 ```command
 save          -- save the cw file
