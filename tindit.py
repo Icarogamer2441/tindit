@@ -129,7 +129,7 @@ class TinyEditor:
                     self.cursor_x = len(self.content[self.cursor_y].rstrip())
             elif ch == 19:  # CTRL+S
                 self.save_file()
-            elif ch == curses.KEY_F1:  # F1
+            elif ch == curses.KEY_F1 or ch == 16:  # F1 or CTRL+P
                 self.command_mode = True
             elif ch == curses.KEY_BACKSPACE or ch == 127:  # Backspace
                 if self.command_mode:
